@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SHADRUSH - PC & MOBILE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body { 
+            margin: 0; background: #020408; color: #00d4ff; 
+            font-family: 'Rajdhani', sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; overflow: hidden;
+            touch-action: none; /* Blokuje przewijanie strony palcem */
+        }
+
+        .shake { animation: shakeAnim 0.3s linear; }
+        @keyframes shakeAnim {
+            0% { transform: translate(5px, 5px); }
+            20% { transform: translate(-5px, -3px); }
+            40% { transform: translate(4px, 2px); }
+            60% { transform: translate(-4px, 4px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+
+        .game-title {
+            font-size: clamp(3rem, 15vw, 6rem); letter-spacing: 10px; margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+        }
+
+        .start-btn {
+            background: transparent; border: 2px solid #00d4ff; color: #00d4ff;
+            padding: 15px 40px; font-size: 1.5rem; font-family: 'Rajdhani', sans-serif;
+            font-weight: 700; text-transform: uppercase; cursor: pointer;
+            letter-spacing: 5px; transition: 0.3s;
+        }
+
+        #game-container { 
+            display: none; 
+            flex-direction: row; /* Zmienione na rządek dla panelu odznak */
+            align-items: center; 
+            gap: 20px; 
+            width: 100%;
+            justify-content: center;
+        }
+
+        canvas { 
+            background: #000; 
+            border: 2px solid #00d4ff; 
+            max-width: 80vw; 
+            max-height: 70vh; 
+            cursor: none;
+        }
+        
+        .stats-top {
+            display: flex;
+            gap: 20px;
+            background: rgba(0, 212, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            position: absolute;
+            top: 20px;
+        }
+
+        /* STYL PANELU ODZNAK */
+        .badges-side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-left: 2px solid #00d4ff;
+            min-width: 150px;
+        }
+
+        .badge-slot {
+            padding: 10px;
+            border: 1px solid #1a3a4a;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #444;
+            text-align: center;
+            transition: 0.5s;
+        }
+
+        .badge-slot.unlocked {
+            color: #ffdd59;
+            border-color: #ffdd59;
+            background: rgba(255, 221, 89, 0.1);
+            text-shadow: 0 0 10px #ffdd59;
+            font-weight: bold;
+        }
+
+        .stat-item span { color: #fff; font-weight: bold; }
+        .combo-text { font-size: 30px; color: #00ff88; font-weight: bold; display: none; text-shadow: 0 0 10px #00ff88; }
+		
+		
+		#corner-text {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-size: 0.8rem;
+    color: rgba(0, 212, 255, 0.4); /* Półprzezroczysty błękit */
+    pointer-events: none; /* Napis nie będzie przeszkadzał w klikaniu */
+    z-index: 1000;
+}
+		
+		
+		
+		
+		
+    </style>
+</head>
+<body id="game-body">
+
+    <div id="start-screen">
+        <h1 class="game-title">SHADRUSH</h1>
+        <button class="start-btn" onclick="initGame()">START</button>
+        <p id="menu-high-score" style="color: #ffdd59; margin-top: 20px;">REKORD: 0</p>
+    </div>
+
+    <div id="game-container">
+        <div class="stats-top">
+            <div class="stat-item">Wynik: <span id="score">0</span></div>
+            <div class="stat-item">Rekord: <span id="best">0</span></div>
+            <div class="stat-item">Tarcza: <span id="shield-status" style="color:#888">BRAK</span></div>
+        </div>
+
+			<div id="corner-text">BETA: 1.0.0</div>
+
+        <div style="position: relative; margin-top: 60px;">
+            <canvas id="gameCanvas"></canvas>
+            <div id="combo-ui" style="position: absolute; top: 10px; right: 10px;" class="combo-text">COMBO X2</div>
+            <p style="font-size: 0.8rem; color: #444; text-align: center;">STERUJ MYSZKĄ LUB PALCEM</p>
+        </div>
+
+        <div class="badges-side-panel" id="badge-panel">
+            <div style="font-size: 0.7rem; color: #00d4ff; margin-bottom: 5px; text-align: center;">ODZNAKI</div>
+            </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Stała rozdzielczość logiczna
+    canvas.width = 800; 
+    canvas.height = 600;
+
+    const s_point = new Audio('sd/dzwek1.wav'); 
+    const s_freeze = new Audio('sd/froze1.wav'); 
+    const s_shield = new Audio('sd/sheld1.wav'); 
+    const s_lose = new Audio('sd/lose1.wav');
+    const s_start = new Audio('sd/dzwek1.wav');
+
+    let pkt = 0, lvl = 1, koniec = false;
+    let mx = 400, my = 300, angle = 0;
+    let historia = [], czasteczki = [], bloki = [], smuga = [];
+    let cel = { x: 200, y: 200 };
+    let p_freeze = null, p_tarcza = null;
+    let czas_freeze = 0, mam_tarcze = false, odstep = 120;
+	let poziomTimer = 0;
+    
+    let comboPoints = 0;
+    let comboLevel = 1;
+    let comboTimer = 0;
+    let highScore = localStorage.getItem('shadrush_best') || 0;
+    document.getElementById('best').innerText = highScore;
+    document.getElementById('menu-high-score').innerText = "REKORD: " + highScore;
+
+    // --- SYSTEM ODZNAK ---
+    const configOdznak = [
+        { progi: 50, nazwa: "NOWICJUSZ" },
+        { progi: 100, nazwa: "ZWINNY" },
+        { progi: 250, nazwa: "MISTRZ" },
+        { progi: 500, nazwa: "EKSPERT" },
+        { progi: 1000, nazwa: "CYBER-DUCH" },
+        { progi: 5000, nazwa: "LEGENDA" }
+    ];
+
+    function generujOdznaki() {
+        const panel = document.getElementById('badge-panel');
+        configOdznak.forEach((o, i) => {
+            const div = document.createElement('div');
+            div.id = 'badge-' + i;
+            div.className = 'badge-slot';
+            div.innerText = '??? (' + o.progi + ')';
+            panel.appendChild(div);
+        });
+    }
+    generujOdznaki();
+
+    function sprawdzOdznaki() {
+        configOdznak.forEach((o, i) => {
+            if (pkt >= o.progi) {
+                const el = document.getElementById('badge-' + i);
+                if (el && !el.classList.contains('unlocked')) {
+                    el.innerText = o.nazwa;
+                    el.classList.add('unlocked');
+                }
+            }
+        });
+    }
+
+    function initGame() {
+        s_start.play().catch(()=>{});
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        pętla();
+    }
+
+    // --- OBSŁUGA STEROWANIA (PC + MOBILE) ---
+    function updateInput(clientX, clientY) {
+        const r = canvas.getBoundingClientRect();
+        // Skalowanie pozycji myszy/dotyku do rozmiaru canvasu
+        const scaleX = canvas.width / r.width;
+        const scaleY = canvas.height / r.height;
+        
+        const nextX = (clientX - r.left) * scaleX;
+        const nextY = (clientY - r.top) * scaleY;
+        
+        angle = Math.atan2(nextY - my, nextX - mx);
+        mx = nextX;
+        my = nextY;
+        smuga.push({x: mx, y: my, t: 1.0});
+    }
+
+    canvas.addEventListener('mousemove', (e) => updateInput(e.clientX, e.clientY));
+    
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        updateInput(e.touches[0].clientX, e.touches[0].clientY);
+    }, {passive: false});
+
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        updateInput(e.touches[0].clientX, e.touches[0].clientY);
+    }, {passive: false});
+
+    function doShake() {
+        document.getElementById('game-body').classList.add('shake');
+        setTimeout(() => document.getElementById('game-body').classList.remove('shake'), 300);
+    }
+
+    function bum(x, y, kolor, moc = 10) {
+        for(let i=0; i<moc; i++) {
+            czasteczki.push({ x, y, sx: (Math.random()-0.5)*10, sy: (Math.random()-0.5)*10, t: 1.0, c: kolor });
+        }
+    }
+
+    function rob_bloki() {
+        bloki = [];
+        for(let i=0; i<2 + lvl; i++) {
+            bloki.push({ x: Math.random()*740+30, y: Math.random()*540+30, size: 40 });
+        }
+    }
+    rob_bloki();
+
+    function pętla() {
+        if(koniec) return;
+		
+		function znajdzWolne() {
+    let nx, ny, kolizja;
+    do {
+        nx = Math.random() * 700 + 50; ny = Math.random() * 500 + 50;
+        kolizja = bloki.some(b => nx > b.x - 20 && nx < b.x + b.size + 20 && ny > b.y - 20 && ny < b.y + b.size + 20);
+    } while (kolizja);
+    return { x: nx, y: ny };
+}
+
+        if(czas_freeze > 0) czas_freeze--;
+        else historia.push({x: mx, y: my, a: angle});
+
+        if(historia.length > odstep) {
+            let s = historia[0];
+            if(Math.hypot(mx-s.x, my-s.y) < 20) kolizja();
+            historia.shift();
+        }
+
+        bloki.forEach(b => {
+            if(mx > b.x && mx < b.x+b.size && my > b.y && my < b.y+b.size) kolizja();
+        });
+
+        if(Math.hypot(mx-cel.x, my-cel.y) < 25) {
+            comboPoints++; 
+            comboTimer = 225; // Ok. 3.7 sekundy
+
+            comboLevel = Math.floor(comboPoints / 10) + 1;
+            pkt += comboLevel;
+            
+            s_point.play().catch(()=>{}); 
+            bum(cel.x, cel.y, "#ffdd59", 15);
+            cel = { x: Math.random()*700+50, y: Math.random()*500+50 };
+            document.getElementById('score').innerText = pkt;
+            
+            sprawdzOdznaki(); // Sprawdzamy czy odblokowano nową odznakę
+
+            const ui = document.getElementById('combo-ui');
+            if(comboLevel > 1) {
+                ui.innerText = "COMBO X" + comboLevel;
+                ui.style.display = 'block';
+            }
+
+            if(pkt % 5 === 0) {
+                lvl++;
+                odstep = Math.max(40, odstep - 15);
+                rob_bloki();
+                if(Math.random() > 0.5) p_freeze = { x: Math.random()*700+50, y: Math.random()*500+50 };
+                if(Math.random() > 0.6) p_tarcza = { x: Math.random()*700+50, y: Math.random()*500+50 };
+            }
+        }
+
+        if(comboTimer > 0) comboTimer--;
+        else { comboPoints = 0; comboLevel = 1; document.getElementById('combo-ui').style.display = 'none'; }
+
+        if(p_freeze && Math.hypot(mx-p_freeze.x, my-p_freeze.y) < 25) {
+            czas_freeze = 180; p_freeze = null;
+            s_freeze.play().catch(()=>{}); bum(mx, my, "#00d4ff", 20);
+        }
+        if(p_tarcza && Math.hypot(mx-p_tarcza.x, my-p_tarcza.y) < 25) {
+            mam_tarcze = true; p_tarcza = null;
+            s_shield.play().catch(()=>{}); bum(mx, my, "#ffffff", 20);
+            document.getElementById('shield-status').innerText = "TAK";
+            document.getElementById('shield-status').style.color = "#00ff88";
+        }
+
+        czasteczki.forEach((p, i) => {
+            p.x += p.sx; p.y += p.sy; p.t -= 0.02;
+            if(p.t <= 0) czasteczki.splice(i, 1);
+        });
+        smuga.forEach((s, i) => {
+            s.t -= 0.05;
+            if(s.t <= 0) smuga.splice(i, 1);
+        });
+
+        rysuj();
+        requestAnimationFrame(pętla);
+    }
+
+    function kolizja() {
+        if(mam_tarcze) {
+            doShake();
+            mam_tarcze = false;
+            document.getElementById('shield-status').innerText = "BRAK";
+            document.getElementById('shield-status').style.color = "#888";
+            historia = []; 
+            bum(mx, my, "#ffffff", 30);
+            if(navigator.vibrate) navigator.vibrate(50);
+        } else {
+            koniec = true;
+            doShake();
+            if(navigator.vibrate) navigator.vibrate(200);
+            s_lose.play().catch(()=>{});
+            if(pkt > highScore) localStorage.setItem('shadrush_best', pkt);
+            alert("KONIEC! Wynik: " + pkt);
+            location.reload();
+        }
+    }
+
+    function rysuj() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = "#426b94";
+        bloki.forEach(b => ctx.fillRect(b.x, b.y, b.size, b.size));
+
+        smuga.forEach(s => {
+            ctx.globalAlpha = s.t * 0.3;
+            ctx.fillStyle = "#00d4ff";
+            ctx.beginPath(); ctx.arc(s.x, s.y, 3, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        if(p_freeze) { ctx.fillStyle = "#00d4ff"; ctx.fillRect(p_freeze.x-10, p_freeze.y-10, 20, 20); }
+        if(p_tarcza) { 
+            ctx.fillStyle = "#fff"; ctx.beginPath(); 
+            ctx.moveTo(p_tarcza.x, p_tarcza.y-12); ctx.lineTo(p_tarcza.x+12, p_tarcza.y); 
+            ctx.lineTo(p_tarcza.x, p_tarcza.y+12); ctx.lineTo(p_tarcza.x-12, p_tarcza.y); 
+            ctx.closePath(); ctx.fill(); 
+        }
+
+        ctx.fillStyle = "#ffdd59"; 
+        ctx.beginPath(); ctx.arc(cel.x, cel.y, 8, 0, Math.PI*2); ctx.fill();
+
+        czasteczki.forEach(p => { ctx.globalAlpha = p.t; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 3, 3); });
+        ctx.globalAlpha = 1;
+
+        if(historia.length >= odstep) {
+            let s = historia[0];
+            rys_statek(s.x, s.y, s.a, "rgba(255, 71, 87, 0.6)");
+        }
+        rys_statek(mx, my, angle, "#00ff88", mam_tarcze);
+    }
+
+    function rys_statek(x, y, a, kol, tarcza) {
+        ctx.save();
+        ctx.translate(x, y); ctx.rotate(a);
+        ctx.fillStyle = kol;
+        if(tarcza) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; }
+        ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-10, -10); ctx.lineTo(-10, 10); ctx.closePath();
+        ctx.fill();
+        if(tarcza) ctx.stroke();
+        ctx.restore();
+    }
+</script>
+</body>
+</html>
+

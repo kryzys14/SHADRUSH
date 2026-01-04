@@ -1,0 +1,132 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHADRUSH - System Start</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            background-color: #00050a; color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
+        }
+
+        .ambient-glow {
+            position: fixed; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 136, 255, 0.1) 0%, transparent 80%);
+            z-index: -1;
+        }
+
+        /* NAGŁÓWEK Z TYTUŁEM */
+        header { margin-top: 60px; text-align: center; }
+
+        .game-title {
+            font-size: clamp(3.5rem, 15vw, 8rem);
+            font-weight: 700; color: #00d4ff;
+            text-transform: uppercase; letter-spacing: 20px;
+            margin: 0; text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+        }
+
+        /* PRZYCISK GRAJ */
+        .main-menu { margin: 40px 0; }
+
+        .start-btn {
+            background: transparent; color: #00d4ff; border: 3px solid #00d4ff;
+            padding: 25px 100px; font-size: 2.5rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 10px; cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .start-btn:hover {
+            background: #00d4ff; color: #00050a;
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.9); transform: scale(1.1);
+        }
+
+        /* SEKCJA ZASAD I OPISU */
+        .content-container {
+            max-width: 800px; width: 90%;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+            margin-bottom: 60px; padding: 30px;
+            background: rgba(0, 212, 255, 0.03);
+            border: 1px solid rgba(0, 212, 255, 0.1); border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            color: #00d4ff; font-size: 1.5rem; text-transform: uppercase;
+            letter-spacing: 3px; margin-bottom: 15px; border-bottom: 2px solid #00d4ff;
+            display: inline-block;
+        }
+
+        .rules-list { padding-left: 20px; color: #a0c4d0; line-height: 1.8; }
+        .rules-list li { margin-bottom: 10px; }
+
+        .description-text { color: #a0c4d0; line-height: 1.6; font-style: italic; }
+
+        /* STEROWANIE */
+        .controls {
+            grid-column: span 2; text-align: center;
+            padding-top: 20px; border-top: 1px solid rgba(0, 212, 255, 0.1);
+            color: #ffffff; font-weight: bold; letter-spacing: 2px;
+        }
+
+        @media (max-width: 700px) {
+            .content-container { grid-template-columns: 1fr; }
+            .controls { grid-column: span 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <header>
+        <h1 class="game-title">SHADRUSH</h1>
+    </header>
+
+    <main class="main-menu">
+        <button class="start-btn" onclick="goToGame()">GRAJ</button>
+    </main>
+
+    <div class="content-container">
+        <div>
+            <span class="section-title">Zasady Gry</span>
+            <ul class="rules-list">
+                <li><b>ZBIERAJ:</b> Złote punkty, aby zwiększać swój wynik i poziom.</li>
+                <li><b>UNIKAJ:</b> Nie pozwól, aby Twój własny "Cień" (czerwony ślad) Cię dotknął.</li>
+                <li><b>COMBO:</b> Zbieraj punkty szybko, by aktywować mnożnik aż do x10.</li>
+                <li><b>PRZESZKODY:</b> Uważaj na niebieskie bloki pojawiające się wraz z Twoim postępem.</li>
+                <li><b>POWER-UPY:</b> Szukaj Tarczy i Zamrożenia, by przetrwać dłużej.</li>
+            </ul>
+        </div>
+
+        <div>
+            <span class="section-title">O projekcie</span>
+            <p class="description-text">
+                W świecie SHADRUSH czas i przestrzeń zaginają się przeciwko Tobie. Jesteś hakerem uciekającym przez nieskończony strumień danych. 
+                Twoim największym wrogiem nie są zabezpieczenia systemu, ale Twoja własna przeszłość. Każdy Twój ruch zostawia ślad, który może stać się Twoim końcem.
+            </p>
+            <p class="description-text">
+                Czy zdołasz utrzymać tempo i stać się legendarnym "Bogiem Maszyn"?
+            </p>
+        </div>
+
+        <div class="controls">
+            STEROWANIE: MYSZKA (PC) | DOTYK (MOBILE)
+        </div>
+    </div>
+
+    <script>
+        function goToGame() {
+            // Przenosi do pliku z grą
+            window.location.href = "gra.html";
+        }
+    </script>
+
+</body>
+</html>
